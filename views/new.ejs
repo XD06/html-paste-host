@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+  />
+  <title>新建页面</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/style.css" />
+  <style>
+    /* 让预览区在移动端也好用 */
+    .pane { min-height: 60vh; }
+    @media (min-width: 1024px) {
+      .pane { min-height: 70vh; }
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100">
+  <div class="mx-auto max-w-7xl px-4 py-10">
+    <!-- 顶部 -->
+    <header class="flex items-center justify-between gap-4 mb-8">
+      <div class="flex items-center gap-3">
+        <img src="/logo.svg" alt="logo" class="h-8 w-8" />
+        <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-gray-800">
+          新建页面
+        </h1>
+      </div>
+      <a href="/" class="btn-ghost">返回首页</a>
+    </header>
+
+    <form action="/create" method="post" class="space-y-6">
+      <!-- 名称 -->
+      <div>
+        <label class="label">页面名称（用于生成路径）</label>
+        <input
+          name="name"
+          placeholder="例如：我的作品集"
+          class="input"
+          required
+        />
+        <p class="hint">最终访问路径示例：<span class="code">/我的-作品集（会自动转为 slug）</span></p>
+      </div>
+
+      <!-- 编辑 + 预览 -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="pane p-4 rounded-2xl border bg-white/80 shadow-sm">
+          <label class="label mb-3">HTML 代码</label>
+          <textarea
+            id="code"
+            name="code"
+            class="w-full h-full min-h-[48vh] rounded-xl border p-3 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="在此粘贴或编写完整 HTML（包含 <html>... 或仅片段均可）"
+            required
+          ><html>
+<head>
+  <meta charset="UTF-8">
+  <title>Hello</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, 'Helvetica Neue', Arial; padding: 24px; }
+    .box { padding: 16px; border-radius: 12px; background: #f7f7f8; border: 1px solid #e5e7eb; }
+  </style>
+</head>
+<body>
+  <h1>我的第一个页面</h1>
+  <p class="box">你可以在左侧编辑，右侧实时预览。</p>
+</body>
+</html></textarea>
+          <div class="mt-3 flex items-center justify-end gap-3">
+            <button type="button" id="btn-format" class="btn-ghost">尝试格式化</button>
+            <button type="button" id="btn-preview" class="btn-primary">手动刷新预览</button>
+          </div>
+        </div>
+
+        <div class="pane p-4 rounded-2xl border bg-white/80 shadow-sm">
+          <div class="flex items-center justify-between mb-3">
+            <label class="label">实时预览</label>
+            <span id="status" class="text-xs text-gray-500">自动预览（防抖 400ms）</span>
+          </div>
+          <iframe id="preview" class="w-full h-full min-h-[48vh] rounded-xl border"></iframe>
+        </div>
+      </div>
+
+      <!-- 提交 -->
+      <div class="flex items-center justify-end gap-3">
+        <button class="btn-primary">🚀 发布</button>
+      </div>
+    </form>
+  </div>
+
+  <script>
+    const ta = document.getElementById('code');
+    const frame = document.getElementById('preview');
+    const statusEl = document.getElementById('status');
+    const btnPreview = document.getElementById('btn-preview');
+    const btnFormat = document.getElementById('btn-format');
+
+    let t = null;
+
+    function setPreview(html) {
+      // 使用 srcdoc 直接预览
+      frame.srcdoc = html;
+    }
+
+    function scheduleUpdate() {
+      clearTimeout(t);
+      statusEl.textContent = '预览更新中…';
+      t = setTimeout(() => {
+        setPreview(ta.value);
+        statusEl.textContent = '自动预览（防抖 400ms）';
+      }, 400);
+    }
+
+    ta.addEventListener('input', scheduleUpdate);
+    btnPreview.addEventListener('click', () => setPreview(ta.value));
+
+    // 简易格式化（仅缩进与换行的轻量处理，避免引入外部库）
+    btnFormat.addEventListener('click', () => {
+      try {
+        // 非严格格式化：通过 DOMParser 规范化标签（可能改变原样式，请酌情使用）
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(ta.value, 'text/html');
+        // 重新序列化
+        const doctype = '<!DOCTYPE html>';
+        const html = doc.documentElement.outerHTML;
+        ta.value = (html.startsWith('<!DOCTYPE') ? html : (doctype + '\n' + html));
+        scheduleUpdate();
+      } catch (e) {
+        alert('格式化失败：' + e.message);
+      }
+    });
+
+    // 初始渲染
+    setPreview(ta.value);
+  </script>
+</body>
+</html>
