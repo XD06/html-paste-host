@@ -1,0 +1,16 @@
+{
+  "name": "html-paste-host",
+  "version": "1.1.0",
+  "description": "Paste-to-publish HTML host with pretty UI and live preview",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "author": "you",
+  "license": "MIT",
+  "dependencies": {
+    "body-parser": "^1.20.2",
+    "ejs": "^3.1.10",
+    "express": "^4.19.2"
+  }
+}
