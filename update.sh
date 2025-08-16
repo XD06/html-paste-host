@@ -5,10 +5,6 @@ set -euo pipefail
 # 是否自动清理悬空镜像（dangling）: true/false
 PRUNE_DANGLING=true
 
-# 是否在 down 时一并删除本地由 compose 构建的镜像（--rmi local）: true/false
-REMOVE_LOCAL_IMAGES=true
-# ======================================
-
 
 # ensure we're in project dir (has docker-compose.yml or docker-compose.yaml)
 if [[ ! -f "docker-compose.yml" && ! -f "docker-compose.yaml" ]]; then
