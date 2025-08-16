@@ -9,17 +9,6 @@ PRUNE_DANGLING=true
 REMOVE_LOCAL_IMAGES=true
 # ======================================
 
-# check compose command
-if docker compose version >/dev/null 2>&1; then
-  DCMD="docker compose"
-elif docker-compose version >/dev/null 2>&1; then
-  DCMD="docker-compose"
-else
-  echo "错误：未检测到 docker compose 或 docker-compose 命令，请先安装 Docker Compose。"
-  exit 1
-fi
-
-echo "ℹ️ 使用的 compose 命令: $DCMD"
 
 # ensure we're in project dir (has docker-compose.yml or docker-compose.yaml)
 if [[ ! -f "docker-compose.yml" && ! -f "docker-compose.yaml" ]]; then
