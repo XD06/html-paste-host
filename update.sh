@@ -11,7 +11,7 @@ if [[ ! -f "docker-compose.yml" && ! -f "docker-compose.yaml" ]]; then
   echo "错误：当前目录无 docker-compose.yml/yaml，请在项目根目录运行此脚本。"
   exit 1
 fi
-
+DCMD="docker-compose"
 # get current git branch
 BRANCH="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "main")"
 echo "🔀 当前 git 分支: $BRANCH"
