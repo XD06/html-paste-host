@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+  />
+  <title>我的网页集合</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body class="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100">
+  <div class="mx-auto max-w-6xl px-4 py-10">
+    <!-- 顶部栏 -->
+    <header class="flex items-center justify-between gap-4 mb-8">
+      <div class="flex items-center gap-3">
+        <img src="/logo.svg" alt="logo" class="h-8 w-8" />
+        <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-gray-800">
+          我的网页集合
+        </h1>
+      </div>
+      <div class="flex items-center gap-3">
+        <a
+          href="/new"
+          class="btn-primary"
+        >
+          ➕ 新建页面
+        </a>
+      </div>
+    </header>
+
+    <!-- 搜索栏 -->
+    <div class="mb-6">
+      <input
+        id="search"
+        type="text"
+        placeholder="搜索页面名称…"
+        class="w-full rounded-2xl border border-gray-200 bg-white/70 px-4 py-3 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+      />
+    </div>
+
+    <!-- 列表 -->
+    <% if (!pages || pages.length === 0) { %>
+      <div class="mt-24 text-center text-gray-500">
+        还没有内容，点击右上角<strong>新建页面</strong>开始吧～
+      </div>
+    <% } else { %>
+      <div id="grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <% pages.forEach(p => { %>
+          <a
+            href="/<%= p.slug %>"
+            target="_blank"
+            class="card group"
+            data-title="<%= p.name.toLowerCase() %>"
+          >
+            <div class="flex-1">
+              <div class="line-clamp-1 text-lg font-semibold text-gray-800 group-hover:text-blue-700 transition">
+                <%= p.name %>
+              </div>
+              <div class="mt-2 text-sm text-gray-500">
+                <span class="inline-flex items-center gap-1">
+                  <span class="i-clock"></span>
+                  <%= new Date(p.time).toLocaleString() %>
+                </span>
+              </div>
+            </div>
+            <div class="mt-4 flex items-center justify-between">
+              <div class="slug-pill">/<%= p.slug %></div>
+              <div class="opacity-0 group-hover:opacity-100 transition">
+                <span class="chev">→</span>
+              </div>
+            </div>
+          </a>
+        <% }) %>
+      </div>
+    <% } %>
+  </div>
+
+  <script>
+    // 简易搜索过滤
+    const input = document.getElementById('search');
+    const cards = Array.from(document.querySelectorAll('#grid .card'));
+    input?.addEventListener('input', (e) => {
+      const q = e.target.value.trim().toLowerCase();
+      cards.forEach(c => {
+        const title = c.getAttribute('data-title') || '';
+        c.style.display = title.includes(q) ? '' : 'none';
+      });
+    });
+  </script>
+</body>
+</html>
