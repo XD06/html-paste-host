@@ -1,101 +1,85 @@
-// server.js
-const express = require("express");
-const bodyParser = require("body-parser");
-const fs = require("fs");
-const path = require("path");
+import express from "express";
+import bodyParser from "body-parser";
+import fs from "fs";
+import path from "path";
+import multer from "multer";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
-const DATA_DIR = path.join(__dirname, "pages");
-const INDEX_FILE = path.join(DATA_DIR, "index.json");
+const pagesDir = path.join(__dirname, "pages");
+const indexFile = path.join(pagesDir, "index.json");
+const uploadDir = path.join(__dirname, "public/uploads");
 
-// 确保数据目录存在
-if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
-if (!fs.existsSync(INDEX_FILE)) fs.writeFileSync(INDEX_FILE, "[]", "utf-8");
+if (!fs.existsSync(pagesDir)) fs.mkdirSync(pagesDir);
+if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
+if (!fs.existsSync(indexFile)) fs.writeFileSync(indexFile, "[]");
 
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
 
-app.use(bodyParser.urlencoded({ extended: true, limit: "2mb" })); // 适度放宽
+app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, "public")));
+app.use("/pages", express.static(pagesDir));
 
-// 工具：slugify
-function slugify(input) {
-  return (input || "")
-    .trim()
-    .toLowerCase()
-    .replace(/[\s_]+/g, "-")
-    .replace(/[^a-z0-9-]/g, "")
-    .replace(/-+/g, "-")
-    .replace(/^-|-$/g, "");
-}
-
-// 工具：读取索引
-function readIndex() {
-  try {
-    const raw = fs.readFileSync(INDEX_FILE, "utf-8");
-    return JSON.parse(raw);
-  } catch (e) {
-    return [];
+// 处理缩略图上传
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, uploadDir);
+  },
+  filename: function (req, file, cb) {
+    cb(null, Date.now() + path.extname(file.originalname));
   }
+});
+const upload = multer({ storage });
+
+function loadPages() {
+  return JSON.parse(fs.readFileSync(indexFile, "utf8"));
 }
 
-// 工具：写入索引
-function writeIndex(list) {
-  fs.writeFileSync(INDEX_FILE, JSON.stringify(list, null, 2), "utf-8");
+function savePages(pages) {
+  fs.writeFileSync(indexFile, JSON.stringify(pages, null, 2));
 }
 
-// 首页：列表 + 搜索（前端完成）
 app.get("/", (req, res) => {
-  const pages = readIndex().sort((a, b) => new Date(b.time) - new Date(a.time));
+  const pages = loadPages().sort((a, b) => b.time - a.time);
   res.render("index", { pages });
 });
 
-// 新建页面
 app.get("/new", (req, res) => {
   res.render("new");
 });
 
-// 创建
-app.post("/create", (req, res) => {
-  let { name, code } = req.body;
+app.post("/create", upload.single("thumbnailFile"), (req, res) => {
+  const { name, code, thumbnailUrl } = req.body;
+  if (!name || !code) return res.send("请输入名称和代码！");
 
-  if (!name || !code) {
-    return res.status(400).send("缺少 name 或 code");
+  const slug = name.replace(/\s+/g, "-").toLowerCase();
+  const filePath = path.join(pagesDir, `${slug}.html`);
+
+  fs.writeFileSync(filePath, code, "utf8");
+
+  let thumbnail = "";
+  if (req.file) {
+    thumbnail = `/uploads/${req.file.filename}`;
+  } else if (thumbnailUrl) {
+    thumbnail = thumbnailUrl;
   }
 
-  let base = slugify(name);
-  if (!base) base = "page";
+  const pages = loadPages();
+  pages.push({ name, slug, time: Date.now(), thumbnail });
+  savePages(pages);
 
-  // 避免重名：page, page-2, page-3 ...
-  let slug = base;
-  let n = 2;
-  while (fs.existsSync(path.join(DATA_DIR, `${slug}.html`))) {
-    slug = `${base}-${n++}`;
-  }
-
-  // 写入文件
-  const filePath = path.join(DATA_DIR, `${slug}.html`);
-  fs.writeFileSync(filePath, code, "utf-8");
-
-  // 更新索引
-  const list = readIndex();
-  list.push({
-    name: name.trim(),
-    slug,
-    time: new Date().toISOString()
-  });
-  writeIndex(list);
-
-  // 返回首页
   res.redirect("/");
 });
 
-// 静态访问页面（放在最后，避免覆盖 /new /create 等路由）
 app.get("/:slug", (req, res) => {
-  const slug = slugify(req.params.slug);
-  const filePath = path.join(DATA_DIR, `${slug}.html`);
+  const slug = req.params.slug;
+  const filePath = path.join(pagesDir, `${slug}.html`);
   if (fs.existsSync(filePath)) {
     res.sendFile(filePath);
   } else {
@@ -104,5 +88,5 @@ app.get("/:slug", (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`🚀 Server running at http://0.0.0.0:${PORT}`);
+  console.log(`🚀 Server running on http://localhost:${PORT}`);
 });
