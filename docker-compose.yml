@@ -1,0 +1,11 @@
+# docker-compose.yml
+version: "3.8"
+services:
+  html-paste-host:
+    build: .
+    container_name: html-paste-host
+    ports:
+      - "40071:3000"
+    volumes:
+      - ./pages:/app/pages
+    restart: unless-stopped
