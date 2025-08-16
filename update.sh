@@ -4,7 +4,7 @@ set -euo pipefail
 # ========= 配置（必要时修改） =========
 # 是否自动清理悬空镜像（dangling）: true/false
 PRUNE_DANGLING=true
-
+REMOVE_LOCAL_IMAGES=true
 
 # ensure we're in project dir (has docker-compose.yml or docker-compose.yaml)
 if [[ ! -f "docker-compose.yml" && ! -f "docker-compose.yaml" ]]; then
