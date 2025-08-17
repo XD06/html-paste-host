@@ -2,43 +2,661 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <title>我的网页集合</title>
+  <title>我的网页集合 - HTML Paste Host</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/style.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #f5576c 75%, #4facfe 100%);
+      background-size: 400% 400%;
+      animation: gradientShift 15s ease infinite;
+      min-height: 100vh;
+    }
+    
+    @keyframes gradientShift {
+      0%, 100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+    }
+    
+    .hero-pattern {
+      background-image: radial-gradient(circle at 25% 25%, rgba(255,255,255,0.1) 0%, transparent 50%),
+                        radial-gradient(circle at 75% 75%, rgba(255,255,255,0.1) 0%, transparent 50%);
+    }
+    
+    .tag-input {
+      background: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+  </style>
 </head>
-<body class="bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen">
-  <div class="max-w-6xl mx-auto py-12 px-6">
-    <header class="flex items-center justify-between mb-10">
-      <h1 class="text-4xl font-extrabold text-gray-800">🌐 我的网页集合</h1>
-      <a href="/new" class="px-5 py-2.5 bg-blue-600 text-white rounded-xl shadow hover:bg-blue-700 transition">
-        ➕ 新建页面
-      </a>
-    </header>
-
-    <% if (pages.length === 0) { %>
-      <div class="text-center text-gray-500 mt-20">
-        还没有页面，点击右上角 <span class="font-semibold">新建页面</span> 开始吧！
-      </div>
-    <% } else { %>
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-        <% pages.forEach(page => { %>
-          <div class="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-2xl transition">
-            <a href="/<%= page.slug %>" target="_blank">
-              <div class="h-40 bg-gray-200 flex items-center justify-center overflow-hidden">
-                <% if (page.thumbnail) { %>
-                  <img src="<%= page.thumbnail %>" class="w-full h-full object-cover" />
-                <% } else { %>
-                  <span class="text-gray-400">无缩略图</span>
-                <% } %>
+<body class="hero-pattern">
+  <!-- 高级通知系统 -->
+  <div id="notificationContainer" class="fixed top-4 right-4 z-50 space-y-2"></div>
+  
+  <!-- 主容器 -->
+  <div class="min-h-screen">
+    <div class="max-w-7xl mx-auto px-4 py-8">
+      
+      <!-- 高级头部 -->
+      <header class="glass-card p-8 mb-8 animate-fade-in">
+        <div class="flex flex-col lg:flex-row items-center justify-between gap-6">
+          
+          <!-- 品牌区域 -->
+          <div class="flex items-center gap-6">
+            <div class="relative">
+              <div class="w-16 h-16 bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500 rounded-2xl shadow-2xl flex items-center justify-center transform rotate-3 hover:rotate-0 transition-transform duration-300">
+                <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9v-9m0-9v9"/>
+                </svg>
               </div>
-              <div class="p-5">
-                <h2 class="text-lg font-semibold text-gray-800 truncate"><%= page.name %></h2>
-                <p class="text-sm text-gray-500 mt-2">创建时间: <%= new Date(page.time).toLocaleString() %></p>
+              <div class="absolute -top-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-white"></div>
+            </div>
+            
+            <div>
+              <h1 class="text-4xl lg:text-5xl font-black bg-gradient-to-r from-gray-900 via-gray-700 to-gray-900 bg-clip-text text-transparent leading-tight">
+                HTML Paste Host
+              </h1>
+              <div class="flex flex-wrap items-center gap-4 mt-2">
+                <p class="text-gray-600 text-lg">创作无界限，分享更精彩</p>
+                <div class="flex items-center gap-3">
+                  <span class="badge badge-primary">
+                    📄 <span id="totalPages"><%= pages.length %></span> 页面
+                  </span>
+                  <span class="badge badge-success">
+                    👀 <span id="totalViews">-</span> 访问
+                  </span>
+                  <span class="badge badge-info">
+                    🏷️ <span id="totalTags">0</span> 标签
+                  </span>
+                </div>
               </div>
+            </div>
+          </div>
+          
+          <!-- 操作区域 -->
+          <div class="flex items-center gap-4">
+            <!-- 主题切换 -->
+            <button id="themeToggle" class="btn-ghost group" title="切换主题">
+              <svg id="sunIcon" class="w-5 h-5 group-hover:rotate-180 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+              </svg>
+              <svg id="moonIcon" class="w-5 h-5 hidden group-hover:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+              </svg>
+            </button>
+            
+            <!-- 导出功能 -->
+            <button id="exportBtn" class="btn-ghost group" title="导出所有页面">
+              <svg class="w-5 h-5 group-hover:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+              </svg>
+            </button>
+            
+            <!-- 新建页面 -->
+            <a href="/new" class="btn-primary group">
+              <svg class="w-5 h-5 group-hover:rotate-90 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+              </svg>
+              创建新页面
             </a>
           </div>
-        <% }) %>
+        </div>
+    </header>
+
+      <!-- 高级搜索和筛选系统 -->
+      <div class="glass-card p-6 mb-8 animate-slide-up">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          
+          <!-- 搜索框 -->
+          <div class="lg:col-span-5">
+            <div class="search-container">
+              <input type="text" id="searchInput" placeholder="搜索页面名称、标签或内容..." class="search-input">
+              <svg class="search-icon w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+              </svg>
+            </div>
+          </div>
+          
+          <!-- 标签筛选 -->
+          <div class="lg:col-span-3">
+            <select id="tagFilter" class="select w-full">
+              <option value="">所有标签</option>
+              <option value="portfolio">作品集</option>
+              <option value="demo">演示</option>
+              <option value="experiment">实验</option>
+              <option value="tutorial">教程</option>
+              <option value="component">组件</option>
+            </select>
+          </div>
+          
+          <!-- 排序选择 -->
+          <div class="lg:col-span-2">
+            <select id="sortSelect" class="select w-full">
+              <option value="time-desc">最新创建</option>
+              <option value="time-asc">最早创建</option>
+              <option value="updated-desc">最近更新</option>
+              <option value="views-desc">热门度</option>
+              <option value="name-asc">名称 A-Z</option>
+              <option value="name-desc">名称 Z-A</option>
+            </select>
+          </div>
+          
+          <!-- 视图切换 -->
+          <div class="lg:col-span-2">
+            <div class="flex items-center gap-2">
+              <button id="gridView" class="btn-ghost flex-1 active-view">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>
+                </svg>
+              </button>
+              <button id="listView" class="btn-ghost flex-1">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 快速标签过滤 -->
+        <div class="mt-4 flex flex-wrap gap-2" id="quickTags">
+          <button class="badge badge-info hover:scale-105 transition-transform cursor-pointer" data-tag="">
+            全部
+          </button>
+          <button class="badge badge-primary hover:scale-105 transition-transform cursor-pointer" data-tag="portfolio">
+            作品集
+          </button>
+          <button class="badge badge-warning hover:scale-105 transition-transform cursor-pointer" data-tag="demo">
+            演示
+          </button>
+          <button class="badge badge-success hover:scale-105 transition-transform cursor-pointer" data-tag="experiment">
+            实验
+          </button>
+        </div>
       </div>
-    <% } %>
+
+      <!-- 内容区域 -->
+      <main class="animate-scale-in">
+        <% if (pages.length === 0) { %>
+          <div class="text-center py-20">
+            <div class="glass-card max-w-md mx-auto p-8">
+              <div class="w-24 h-24 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
+                <svg class="w-12 h-12 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"/>
+                </svg>
+              </div>
+              <h3 class="text-2xl font-bold text-gray-800 mb-3">开始您的创作之旅</h3>
+              <p class="text-gray-600 mb-6 leading-relaxed">还没有页面？点击下方按钮创建您的第一个精彩作品</p>
+              <a href="/new" class="btn-primary">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                </svg>
+                立即开始创作
+              </a>
+            </div>
+      </div>
+    <% } else { %>
+          <!-- 网格视图 -->
+          <div id="gridContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <% pages.forEach(page => { %>
+              <article class="premium-card group page-card" data-name="<%= page.name.toLowerCase() %>" data-slug="<%= page.slug %>" data-time="<%= page.time %>" data-views="<%= page.views || 0 %>" data-updated="<%= page.updatedAt || 0 %>">
+                
+                <!-- 缩略图区域 -->
+                <div class="relative h-48 bg-gradient-to-br from-gray-100 to-gray-200 overflow-hidden">
+                  <a href="/<%= page.slug %>" target="_blank" class="block h-full">
+                <% if (page.thumbnail) { %>
+                      <img src="<%= page.thumbnail %>" 
+                           class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
+                           alt="<%= page.name %>"
+                           onerror="this.parentElement.innerHTML='<div class=\'w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100\'><svg class=\'w-16 h-16 text-blue-300\' fill=\'none\' stroke=\'currentColor\' viewBox=\'0 0 24 24\'><path stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'1.5\' d=\'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z\'/></svg></div>'" />
+                <% } else { %>
+                      <div class="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+                        <svg class="w-16 h-16 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                      </div>
+                    <% } %>
+                  </a>
+                  
+                  <!-- 操作按钮（悬停显示） -->
+                  <div class="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0 flex gap-2">
+                    <a href="/edit/<%= page.slug %>" 
+                       class="p-2.5 bg-white/95 hover:bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 backdrop-blur-sm border border-white/20"
+                       title="编辑页面">
+                      <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                      </svg>
+                    </a>
+                    <button onclick="sharePage('<%= page.slug %>', '<%= page.name %>')" 
+                            class="p-2.5 bg-white/95 hover:bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 backdrop-blur-sm border border-white/20"
+                            title="分享页面">
+                      <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"/>
+                      </svg>
+                    </button>
+                    <button onclick="deletePage('<%= page.slug %>', '<%= page.name %>')" 
+                            class="p-2.5 bg-white/95 hover:bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 backdrop-blur-sm border border-white/20"
+                            title="删除页面">
+                      <svg class="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                      </svg>
+                    </button>
+                  </div>
+                  
+                  <!-- 状态指示器 -->
+                  <div class="absolute top-3 left-3 flex gap-2">
+                    <% if (page.updatedAt) { %>
+                      <span class="badge badge-success text-xs">已更新</span>
+                    <% } %>
+                    <% if (page.views && page.views > 10) { %>
+                      <span class="badge badge-warning text-xs">热门</span>
+                <% } %>
+              </div>
+                </div>
+
+                <!-- 卡片内容 -->
+                <div class="p-6">
+                  <div class="flex items-start justify-between mb-3">
+                    <h2 class="text-lg font-bold text-gray-900 truncate flex-1 group-hover:text-blue-600 transition-colors" title="<%= page.name %>">
+                      <%= page.name %>
+                    </h2>
+                    <button class="ml-2 p-1 rounded-lg hover:bg-gray-100 transition-colors" title="添加标签" onclick="openTagEditor('<%= page.slug %>')">
+                      <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.99 1.99 0 013 12V7a4 4 0 014-4z"/>
+                      </svg>
+                    </button>
+                  </div>
+                  
+                  <!-- 标签区域 -->
+                  <div class="flex flex-wrap gap-1 mb-4" id="tags-<%= page.slug %>">
+                    <!-- 标签将通过 JavaScript 动态加载 -->
+                  </div>
+                  
+                  <!-- 页面统计 -->
+                  <div class="grid grid-cols-2 gap-4 text-sm text-gray-500 mb-4">
+                    <div class="flex items-center gap-1">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                      </svg>
+                      <%= new Date(page.time).toLocaleDateString() %>
+                    </div>
+                    <% if (page.views && page.views > 0) { %>
+                    <div class="flex items-center gap-1">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                      </svg>
+                      <%= page.views %> 次访问
+                    </div>
+                    <% } %>
+              </div>
+                  
+                  <!-- 页面链接 -->
+                  <div class="flex items-center justify-between">
+                    <code class="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-md font-mono">
+                      /<%= page.slug %>
+                    </code>
+                    <a href="/<%= page.slug %>" target="_blank" 
+                       class="text-blue-600 hover:text-blue-700 font-medium text-sm flex items-center gap-1 transition-colors">
+                      访问页面
+                      <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-1M14 4h6m0 0v6m0-6L10 14"/>
+                      </svg>
+                    </a>
+                  </div>
+                </div>
+              </article>
+            <% }) %>
+          </div>
+          
+          <!-- 列表视图 -->
+          <div id="listContainer" class="hidden space-y-4">
+            <!-- 列表项将通过 JavaScript 动态生成 -->
+          </div>
+        <% } %>
+      </main>
+    </div>
   </div>
+
+  <!-- 删除确认模态框 -->
+  <div id="deleteModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-2xl p-6 max-w-md mx-4 shadow-2xl">
+      <div class="text-center">
+        <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <svg class="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5C2.962 18.333 3.924 20 5.464 20z"/>
+          </svg>
+        </div>
+        <h3 class="text-lg font-semibold text-gray-900 mb-2">确认删除</h3>
+        <p class="text-gray-600 mb-6">确定要删除页面 "<span id="deletePageName" class="font-medium"></span>" 吗？此操作无法撤销。</p>
+        <div class="flex gap-3 justify-center">
+          <button onclick="closeDeleteModal()" class="btn-ghost">取消</button>
+          <form id="deleteForm" method="post" class="inline">
+            <button type="submit" class="btn-danger">确认删除</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 标签编辑模态框 -->
+  <div id="tagEditorModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-2xl p-6 max-w-md mx-4 shadow-2xl">
+      <div class="text-center">
+        <h3 class="text-lg font-semibold text-gray-900 mb-2">编辑页面标签</h3>
+        <p class="text-gray-600 mb-4">为页面 "<span id="tagEditorPageName"></span>" 添加或移除标签。</p>
+        <div class="flex flex-wrap gap-2 mb-4" id="tagEditorTags">
+          <!-- 标签将通过 JavaScript 动态加载 -->
+        </div>
+        <input type="text" id="newTagInput" placeholder="添加新标签 (例如: portfolio, demo)" class="input input-bordered w-full max-w-xs" />
+        <div class="flex justify-end gap-2 mt-4">
+          <button onclick="closeTagEditorModal()" class="btn-ghost">取消</button>
+          <button id="saveTagsBtn" class="btn-primary">保存标签</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function deletePage(slug, name) {
+      document.getElementById('deletePageName').textContent = name;
+      document.getElementById('deleteForm').action = `/delete/${slug}`;
+      document.getElementById('deleteModal').classList.remove('hidden');
+      document.getElementById('deleteModal').classList.add('flex');
+    }
+
+    function closeDeleteModal() {
+      document.getElementById('deleteModal').classList.add('hidden');
+      document.getElementById('deleteModal').classList.remove('flex');
+    }
+
+    // 点击模态框外部关闭
+    document.getElementById('deleteModal').addEventListener('click', function(e) {
+      if (e.target === this) {
+        closeDeleteModal();
+      }
+    });
+
+    // ESC键关闭模态框
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        closeDeleteModal();
+      }
+    });
+
+    function openTagEditor(slug) {
+      document.getElementById('tagEditorPageName').textContent = slug;
+      document.getElementById('tagEditorTags').innerHTML = ''; // 清空现有标签
+      document.getElementById('newTagInput').value = ''; // 清空输入框
+      document.getElementById('tagEditorModal').classList.remove('hidden');
+      document.getElementById('tagEditorModal').classList.add('flex');
+
+      fetch(`/api/pages/${slug}/tags`)
+        .then(response => response.json())
+        .then(tags => {
+          tags.forEach(tag => {
+            const tagButton = document.createElement('button');
+            tagButton.className = 'badge badge-info hover:scale-105 transition-transform cursor-pointer';
+            tagButton.textContent = tag;
+            tagButton.setAttribute('data-tag', tag);
+            document.getElementById('tagEditorTags').appendChild(tagButton);
+          });
+        })
+        .catch(error => {
+          console.error('Failed to load tags:', error);
+          showNotification('加载标签失败', 'error');
+        });
+    }
+
+    function closeTagEditorModal() {
+      document.getElementById('tagEditorModal').classList.add('hidden');
+      document.getElementById('tagEditorModal').classList.remove('flex');
+    }
+
+    document.getElementById('tagEditorModal').addEventListener('click', function(e) {
+      if (e.target === this) {
+        closeTagEditorModal();
+      }
+    });
+
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        closeTagEditorModal();
+      }
+    });
+
+    document.getElementById('saveTagsBtn').addEventListener('click', function() {
+      const slug = document.getElementById('tagEditorPageName').textContent;
+      const newTags = document.getElementById('newTagInput').value.trim();
+      const currentTags = Array.from(document.getElementById('tagEditorTags').children).map(button => button.textContent);
+
+      const tagsToAdd = newTags.split(',').map(tag => tag.trim()).filter(tag => tag && !currentTags.includes(tag));
+      const tagsToRemove = currentTags.filter(tag => !newTags.includes(tag));
+
+      if (tagsToAdd.length === 0 && tagsToRemove.length === 0) {
+        showNotification('没有新的标签或需要移除的标签', 'info');
+        return;
+      }
+
+      fetch(`/api/pages/${slug}/tags`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          add: tagsToAdd,
+          remove: tagsToRemove
+        })
+      })
+        .then(response => response.json())
+        .then(data => {
+          showNotification('标签已更新', 'success');
+          // 刷新页面以反映标签变化
+          window.location.reload();
+        })
+        .catch(error => {
+          console.error('Failed to save tags:', error);
+          showNotification('更新标签失败', 'error');
+        });
+    });
+
+    // 搜索和筛选功能
+    const searchInput = document.getElementById('searchInput');
+    const sortSelect = document.getElementById('sortSelect');
+    const tagFilter = document.getElementById('tagFilter');
+    const gridViewBtn = document.getElementById('gridView');
+    const listViewBtn = document.getElementById('listView');
+    const gridContainer = document.getElementById('gridContainer');
+    const listContainer = document.getElementById('listContainer');
+    const pageCards = document.querySelectorAll('.grid > div');
+    
+    function filterAndSortPages() {
+      if (pageCards.length === 0) return;
+      
+      const searchTerm = searchInput.value.toLowerCase().trim();
+      const sortBy = sortSelect.value;
+      const selectedTag = tagFilter.value;
+      const isGridView = gridViewBtn.classList.contains('active-view');
+
+      // 获取所有页面信息
+      const pagesData = Array.from(pageCards).map(card => {
+        const name = card.querySelector('h2').textContent.toLowerCase();
+        const slug = card.querySelector('a[href^="/"]').getAttribute('href').substring(1);
+        const timeText = card.querySelector('.text-gray-500 div:first-child').textContent.trim();
+        const tags = Array.from(card.querySelectorAll('#tags-' + slug + ' button')).map(button => button.textContent);
+        
+        return {
+          element: card,
+          name: name,
+          slug: slug,
+          timeText: timeText,
+          tags: tags
+        };
+      });
+      
+      // 应用标签筛选
+      let filteredPages = pagesData.filter(page => 
+        page.tags.some(tag => tag.toLowerCase().includes(selectedTag))
+      );
+
+      // 应用搜索筛选
+      filteredPages = filteredPages.filter(page => 
+        page.name.includes(searchTerm) || page.slug.includes(searchTerm)
+      );
+      
+      // 排序页面
+      filteredPages.sort((a, b) => {
+        if (sortBy.includes('time')) {
+          const dateA = new Date(a.timeText).getTime();
+          const dateB = new Date(b.timeText).getTime();
+          return sortBy === 'time-desc' ? dateB - dateA : dateA - dateB;
+        } else if (sortBy.includes('updated')) {
+          const dateA = new Date(a.timeText).getTime();
+          const dateB = new Date(b.timeText).getTime();
+          return sortBy === 'updated-desc' ? dateB - dateA : dateA - dateB;
+        } else if (sortBy.includes('views')) {
+          return sortBy === 'views-desc' ? b.views - a.views : a.views - b.views;
+        } else {
+          return sortBy === 'name-asc' ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name);
+        }
+      });
+      
+      // 隐藏所有卡片
+      pagesData.forEach(page => {
+        page.element.style.display = 'none';
+        page.element.style.opacity = '0';
+        page.element.style.transform = 'scale(0.8)';
+      });
+      
+      // 显示筛选后的卡片
+      setTimeout(() => {
+        filteredPages.forEach((page, index) => {
+          page.element.style.display = 'block';
+          setTimeout(() => {
+            page.element.style.opacity = '1';
+            page.element.style.transform = 'scale(1)';
+            page.element.style.transition = 'all 0.3s ease';
+          }, index * 50); // 错开动画时间
+        });
+      }, 100);
+      
+      // 更新计数
+      document.getElementById('totalPages').textContent = filteredPages.length;
+      
+      // 显示无结果提示
+      const noResults = document.getElementById('noResults');
+      if (filteredPages.length === 0 && searchTerm) {
+        if (!noResults) {
+          const div = document.createElement('div');
+          div.id = 'noResults';
+          div.className = 'col-span-full text-center py-12';
+          div.innerHTML = `
+            <div class="max-w-sm mx-auto">
+              <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                </svg>
+              </div>
+              <h3 class="text-lg font-medium text-gray-800 mb-2">没有找到匹配的页面</h3>
+              <p class="text-gray-600">尝试调整搜索关键词或创建新页面</p>
+            </div>
+          `;
+          document.querySelector('.grid').appendChild(div);
+        }
+        noResults.style.display = 'block';
+      } else if (noResults) {
+        noResults.style.display = 'none';
+      }
+    }
+
+    // 防抖搜索
+    let searchTimeout;
+    searchInput.addEventListener('input', function() {
+      clearTimeout(searchTimeout);
+      searchTimeout = setTimeout(filterAndSortPages, 300);
+    });
+
+    // 排序变化
+    sortSelect.addEventListener('change', filterAndSortPages);
+    tagFilter.addEventListener('change', filterAndSortPages);
+
+    // 视图切换
+    gridViewBtn.addEventListener('click', function() {
+      gridViewBtn.classList.add('active-view');
+      listViewBtn.classList.remove('active-view');
+      gridContainer.classList.remove('hidden');
+      listContainer.classList.add('hidden');
+    });
+    listViewBtn.addEventListener('click', function() {
+      gridViewBtn.classList.remove('active-view');
+      listViewBtn.classList.add('active-view');
+      gridContainer.classList.add('hidden');
+      listContainer.classList.remove('hidden');
+    });
+
+    // 快捷键支持
+    document.addEventListener('keydown', function(e) {
+      // Ctrl/Cmd + F 聚焦搜索框
+      if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+        e.preventDefault();
+        searchInput.focus();
+      }
+      
+      // Ctrl/Cmd + N 新建页面
+      if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+        e.preventDefault();
+        window.location.href = '/new';
+      }
+    });
+
+    // 暗色模式功能
+    const themeToggle = document.getElementById('themeToggle');
+    const sunIcon = document.getElementById('sunIcon');
+    const moonIcon = document.getElementById('moonIcon');
+    
+    // 检查本地存储的主题设置
+    const currentTheme = localStorage.getItem('theme');
+    if (currentTheme === 'dark') {
+      document.documentElement.classList.add('dark');
+      sunIcon.classList.add('hidden');
+      moonIcon.classList.remove('hidden');
+    }
+    
+    // 主题切换功能
+    themeToggle.addEventListener('click', function() {
+      document.documentElement.classList.toggle('dark');
+      
+      if (document.documentElement.classList.contains('dark')) {
+        localStorage.setItem('theme', 'dark');
+        sunIcon.classList.add('hidden');
+        moonIcon.classList.remove('hidden');
+      } else {
+        localStorage.setItem('theme', 'light');
+        sunIcon.classList.remove('hidden');
+        moonIcon.classList.add('hidden');
+      }
+    });
+
+    // 初始化
+    if (pageCards.length > 0) {
+      filterAndSortPages();
+    }
+
+    // 加载统计数据
+    fetch('/api/stats')
+      .then(response => response.json())
+      .then(data => {
+        document.getElementById('totalViews').textContent = data.totalViews;
+        document.getElementById('totalTags').textContent = data.totalTags;
+        // 如果需要，可以在这里添加更多统计信息的显示
+      })
+      .catch(error => {
+        console.log('Failed to load stats:', error);
+        document.getElementById('totalViews').textContent = '0';
+        document.getElementById('totalTags').textContent = '0';
+      });
+  </script>
 </body>
 </html>
